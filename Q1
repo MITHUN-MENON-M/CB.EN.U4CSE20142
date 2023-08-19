@@ -1,0 +1,51 @@
+from flask import Flask, jsonify
+import requests
+import datetime
+
+app = Flask(__name__)
+
+REGISTER_URL = 'http://20.244.56.144/train/register'
+AUTH_URL = 'http://20.244.56.144/train/auth'
+TRAINS_URL = 'http://20.244.56.144/train/trains'
+credentials = {
+    "companyName": "Train Central",
+    "clientID": "b46128a0-fbde-4c16-a4b1-6ae6ad718e27",
+    "ownerName": "Ram",
+    "ownerEmail": "ram@abc.edu",
+    "rollNo": "1",
+    "clientSecret": "XOyolORPayKBOdAN"
+}
+
+def get_token():
+    response = requests.post(AUTH_URL, json=credentials)
+    return response.json().get('access_token')
+
+def fetch_trains():
+    token = get_token()
+    headers = {'Authorization': f'Bearer {token}'}
+    response = requests.get(TRAINS_URL, headers=headers)
+    return response.json()
+
+def filter_trains(trains):
+    current_time = datetime.datetime.now()
+    filtered_trains = []
+
+    for train in trains:
+        hours, minutes, _ = train["departureTime"].values()
+        delayed_by = train["delayedBy"]
+        departure_time = datetime.datetime.now().replace(hour=hours, minute=minutes) + datetime.timedelta(minutes=delayed_by)
+        if departure_time > current_time + datetime.timedelta(minutes=30) and departure_time < current_time + datetime.timedelta(hours=12):
+            filtered_trains.append(train)
+    
+    sorted_trains = sorted(filtered_trains, key=lambda x: (x['price']['sleeper'], -x['seatsAvailable']['sleeper'], -x['departureTime']['Hours']))
+
+    return sorted_trains
+
+@app.route('/next-trains', methods=['GET'])
+def next_trains():
+    trains = fetch_trains()
+    filtered_trains = filter_trains(trains)
+    return jsonify(filtered_trains)
+
+if __name__ == '__main__':
+    app.run(debug=True)
