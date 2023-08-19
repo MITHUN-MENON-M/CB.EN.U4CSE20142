@@ -1,0 +1,98 @@
+TrainList.js
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Link } from "react-router-dom";
+import { Container, Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
+
+const TrainList = () => {
+  const [trains, setTrains] = useState([]);
+
+  useEffect(() => {
+    axios.get("YOUR_API_URL/trains")
+      .then((response) => {
+        setTrains(response.data);
+      });
+  }, []);
+
+  return (
+    <Container>
+      <Paper>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Departure</TableCell>
+              <TableCell>Arrival</TableCell>
+              {/* Add other headers here */}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {trains.map((train) => (
+              <TableRow key={train.id}>
+                <TableCell>
+                  <Link to={`/train/${train.id}`}>{train.name}</Link>
+                </TableCell>
+                <TableCell>{train.departure}</TableCell>
+                <TableCell>{train.arrival}</TableCell>
+                {/* Add other cells here */}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Paper>
+    </Container>
+  );
+};
+
+export default TrainList;
+
+
+TrainDetails.js
+
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Container, Paper } from "@mui/material";
+
+const TrainDetails = ({ match }) => {
+  const trainId = match.params.id;
+  const [train, setTrain] = useState(null);
+
+  useEffect(() => {
+    axios.get(`YOUR_API_URL/trains/${trainId}`)
+      .then((response) => {
+        setTrain(response.data);
+      });
+  }, [trainId]);
+
+  if (!train) return <div>Loading...</div>;
+
+  return (
+    <Container>
+      <Paper>
+        <h1>{train.name}</h1>
+        <p>Departure: {train.departure}</p>
+        <p>Arrival: {train.arrival}</p>
+        {/* Add other details here */}
+      </Paper>
+    </Container>
+  );
+};
+
+export default TrainDetails;
+
+App.js
+
+import { BrowserRouter as Router, Route } from "react-router-dom";
+import TrainList from "./TrainList";
+import TrainDetails from "./TrainDetails";
+
+function App() {
+  return (
+    <Router>
+      <Route path="/" exact component={TrainList} />
+      <Route path="/train/:id" component={TrainDetails} />
+    </Router>
+  );
+}
+
+export default App;
